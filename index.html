@@ -6,154 +6,326 @@
 <meta name="robots" content="noindex, nofollow">
 <title>TrueDuel Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Inter:wght@400;500;600&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:ital,wght@1,900&display=swap">
 <style>
-/* Layout: sticky brand bar → KPI tiles → signup chart → 4 breakdown cards → player table. */
+/* Layout: fixed sidebar (desktop) / top tab strip (phone) → section views routed by #hash.
+   Tokens: neutral slate surfaces with a TrueDuel indigo accent; green/red only for state. */
 :root {
-  --bg: #F3F1FF; --surface: #FFFFFF; --surface-2: #EEEAFD; --line: #DCD6F7;
-  --ink: #1B1446; --muted: #6A6493; --brand: #3B2FE0; --brand-2: #2A1580;
-  --yes: #16A34A; --no: #E5322D; --gold: #F29A0E;
-  --display: "Nunito", system-ui, sans-serif; --body: "Inter", system-ui, sans-serif;
+  --bg: #F5F6FA; --surface: #FFFFFF; --sunken: #F0F1F7; --line: #E3E5EF; --line-strong: #D2D5E3;
+  --ink: #141629; --ink-2: #3E4260; --muted: #767A98;
+  --accent: #4338CA; --accent-soft: #EEF0FF; --accent-ink: #FFFFFF;
+  --ok: #15803D; --ok-soft: #DCFCE7; --warn: #B45309; --warn-soft: #FEF3C7; --bad: #B91C1C; --bad-soft: #FEE2E2;
+  --s1: #4338CA; --s2: #16A34A; --s3: #F59E0B; --s4: #DB2777;
+  --side: #121433; --side-ink: #C9CBE6; --side-active: #262A63;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --brand: "Nunito", "Inter", system-ui, sans-serif;
+  --r: 14px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #120A3A; --surface: #1D1356; --surface-2: #261A6B; --line: #34277E;
-  --ink: #F2EFFF; --muted: #A9A2D6; --brand: #8E85FF; --brand-2: #2A1580; color-scheme: dark; } }
-:root[data-theme="dark"] { --bg: #120A3A; --surface: #1D1356; --surface-2: #261A6B; --line: #34277E;
-  --ink: #F2EFFF; --muted: #A9A2D6; --brand: #8E85FF; --brand-2: #2A1580; color-scheme: dark; }
+  --bg: #0D0F1F; --surface: #15182D; --sunken: #1B1F38; --line: #262A46; --line-strong: #343959;
+  --ink: #EEF0FA; --ink-2: #C3C6DE; --muted: #8C90B0; --accent: #8B83FF; --accent-soft: #23264A; --accent-ink: #0D0F1F;
+  --ok: #4ADE80; --ok-soft: #12321F; --warn: #FBBF24; --warn-soft: #382B0E; --bad: #F87171; --bad-soft: #3A1717;
+  --s1: #8B83FF; --s2: #4ADE80; --s3: #FBBF24; --s4: #F472B6; --side: #0A0B18; --side-active: #1F2350; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0D0F1F; --surface: #15182D; --sunken: #1B1F38; --line: #262A46; --line-strong: #343959;
+  --ink: #EEF0FA; --ink-2: #C3C6DE; --muted: #8C90B0; --accent: #8B83FF; --accent-soft: #23264A; --accent-ink: #0D0F1F;
+  --ok: #4ADE80; --ok-soft: #12321F; --warn: #FBBF24; --warn-soft: #382B0E; --bad: #F87171; --bad-soft: #3A1717;
+  --s1: #8B83FF; --s2: #4ADE80; --s3: #FBBF24; --s4: #F472B6; --side: #0A0B18; --side-active: #1F2350; color-scheme: dark; }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); }
-.wrap { max-width: 1180px; margin: 0 auto; padding-block: 18px 40px;
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ── brand ── */
+.wordmark { font: italic 900 22px/1 var(--brand); letter-spacing: -0.5px; }
+.wordmark .t { color: #22C55E; } .wordmark .d { color: #EF4444; }
+
+/* ── login ── */
+.login { min-height: 100%; display: grid; place-items: center; padding-block: 32px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-  display: grid; gap: 16px; }
-h1, h2 { font-family: var(--display); margin: 0; text-wrap: balance; }
-.bar { position: sticky; top: 0; z-index: 5; background: linear-gradient(135deg, #3A23A8, var(--brand-2)); color: #fff;
-  padding-top: env(safe-area-inset-top, 0px); }
-.bar .in { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
-  padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.logo { font: 900 italic 24px var(--display); letter-spacing: -0.5px; }
-.logo b { color: #2BD964; } .logo i { color: #FF5A5A; font-style: inherit; }
-.logo small { font: 800 11px var(--display); letter-spacing: 2px; color: rgba(255,255,255,.75); margin-left: 8px; }
-.meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: rgba(255,255,255,.85); }
-button { font: 700 13px var(--display); border: 0; border-radius: 999px; padding: 8px 14px; cursor: pointer; }
-button:focus-visible, input:focus-visible { outline: 3px solid #FFC93C; outline-offset: 2px; }
-.btn-light { background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.3); }
-.btn-main { background: var(--brand); color: #fff; }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: #2BD964; display: inline-block; }
-.dot.off { background: #FFC93C; }
+  background: radial-gradient(1200px 600px at 20% 0%, #3A23A8 0%, transparent 60%), linear-gradient(160deg, #1A1050, #0B0826); }
+.login-card { width: 100%; max-width: 380px; background: var(--surface); border-radius: 20px; padding: 28px;
+  box-shadow: 0 30px 80px rgba(5, 3, 30, .45); display: grid; gap: 18px; }
+.login-card h1 { margin: 0; font-size: 20px; font-weight: 700; }
+.login-card p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.field { display: grid; gap: 6px; }
+.field label { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.input { width: 100%; padding: 11px 13px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line-strong);
+  background: var(--surface); padding: 8px 14px; border-radius: 10px; font-weight: 600; font-size: 13px; }
+.btn:hover { background: var(--sunken); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); padding: 11px 14px; }
+.btn-primary:hover { filter: brightness(1.08); background: var(--accent); }
+.alert { padding: 10px 12px; border-radius: 10px; font-size: 13px; background: var(--bad-soft); color: var(--bad); }
 
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
-.kpi .v { font: 900 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
-.kpi .l { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
-.kpi.hero { background: linear-gradient(135deg, #3A23A8, var(--brand-2)); color: #fff; border: 0; }
-.kpi.hero .l { color: rgba(255,255,255,.8); }
-.kpi .live { color: var(--yes); }
+/* ── shell ── */
+.shell { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: 100%; }
+.side { background: var(--side); color: var(--side-ink); padding: 20px 14px; display: flex; flex-direction: column; gap: 22px;
+  position: sticky; top: 0; height: 100vh; }
+.side .brandrow { display: flex; align-items: center; gap: 8px; padding: 0 8px; }
+.tag { font-size: 10.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; padding: 3px 7px; border-radius: 6px;
+  background: rgba(255,255,255,.1); color: #fff; }
+.nav { display: grid; gap: 2px; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; color: var(--side-ink);
+  text-decoration: none; font-weight: 500; }
+.nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
+.nav a[aria-current="page"] { background: var(--side-active); color: #fff; }
+.nav svg { width: 18px; height: 18px; flex: none; opacity: .9; }
+.side-foot { margin-top: auto; display: grid; gap: 8px; font-size: 12px; color: #8E91B8; padding: 0 8px; }
+.side-foot button { background: transparent; border: 1px solid #2E3266; color: var(--side-ink); border-radius: 10px; padding: 8px; }
+.side-foot button:hover { background: rgba(255,255,255,.06); }
 
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; min-width: 0; }
-.card h2 { font-size: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-.card h2 span { font: 500 12px var(--body); color: var(--muted); }
-.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-.rows { display: grid; gap: 7px; }
-.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: 13.5px; }
-.row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.row .num { font-weight: 600; font-variant-numeric: tabular-nums; }
-.track { grid-column: 1 / -1; height: 6px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
-.track i { display: block; height: 100%; background: var(--brand); border-radius: 6px; }
+.main { min-width: 0; }
+.topbar { position: sticky; top: 0; z-index: 4; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line); }
+.topbar .in { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; padding-block: 14px;
+  padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.topbar h1 { margin: 0; font-size: 19px; font-weight: 700; text-wrap: balance; }
+.status { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+.pulse.off { background: var(--warn); }
+@media (prefers-reduced-motion: no-preference) { .pulse:not(.off) { animation: pulse 2s infinite; } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); } 100% { box-shadow: 0 0 0 8px transparent; } }
+.mobile-tabs { display: none; }
+.mobile-brand { display: none; align-items: center; gap: 8px; }
 
-.chart { width: 100%; height: 170px; display: block; }
-.chart text { fill: var(--muted); font: 11px var(--body); }
-.chart .grid { stroke: var(--line); }
-.chart .b { fill: var(--brand); }
-.chart .b.today { fill: var(--yes); }
+.content { display: grid; gap: 18px; padding-block: 20px 48px;
+  padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); max-width: 1320px; }
+.stack { display: grid; gap: 18px; }
+.content > *, .stack > *, .kpis > *, .grid-2 > *, .grid-4 > * { min-width: 0; }
+.flag { width: 20px; height: 14px; border-radius: 2px; object-fit: cover; vertical-align: -2px; margin-right: 6px; box-shadow: 0 0 0 1px var(--line); }
+.flag.none { display: inline-block; background: var(--sunken); }
 
-.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
-.tools input { flex: 1 1 200px; min-width: 0; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line);
-  background: var(--surface-2); color: var(--ink); font: 14px var(--body); }
-.chip { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
-.chip[aria-pressed="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
-.tablewrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; }
-td.n { text-align: right; font-variant-numeric: tabular-nums; }
-.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--surface-2); }
-.pill.android { background: #DCFCE7; color: #166534; } .pill.ios { background: #E0E7FF; color: #3730A3; }
-.pill.web { background: #FEF3C7; color: #92400E; }
-.on { color: var(--yes); font-weight: 600; }
-.note { color: var(--muted); font-size: 12.5px; }
-.err { background: #FEE2E2; color: #991B1B; border-radius: 12px; padding: 10px 12px; }
+/* ── KPI tiles ── */
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 6px; min-width: 0; }
+.kpi .label { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.kpi .value { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.1; }
+.kpi .sub { font-size: 12.5px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px; }
+.badge.up { background: var(--ok-soft); color: var(--ok); }
+.badge.flat { background: var(--sunken); color: var(--muted); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.meter { display: block; height: 6px; border-radius: 6px; background: var(--sunken); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); border-radius: 6px; }
 
-.login { max-width: 380px; margin: 12vh auto 0; display: grid; gap: 12px; text-align: center;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.login input { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 15px var(--body); }
-@media (prefers-reduced-motion: no-preference) { .track i, .chart .b { transition: width .4s, height .4s; } }
+/* ── panels ── */
+.grid-2 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; display: grid; gap: 14px; align-content: start; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.panel-head h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.hint { font-size: 12px; color: var(--muted); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+.list { display: grid; gap: 10px; }
+.li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 12px; align-items: center; font-size: 13.5px; }
+.li .k { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li .v { font-weight: 600; }
+.li .v small { color: var(--muted); font-weight: 500; margin-left: 6px; }
+.li .meter { grid-column: 1 / -1; }
+
+.chartbox { position: relative; color: var(--ink); }
+.chart { width: 100%; height: 240px; display: block; overflow: visible; touch-action: pan-y; }
+.chart .gl { stroke: var(--line); }
+.chart text { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12px; padding: 8px 10px; border-radius: 8px;
+  white-space: nowrap; transform: translate(-50%, -100%); box-shadow: 0 8px 24px rgba(0,0,0,.2); z-index: 2; }
+.tip b { display: block; margin-bottom: 2px; }
+
+.stat-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--sunken); border-radius: 12px; padding: 12px; min-width: 0; }
+.stat .v { font-size: 20px; font-weight: 700; }
+.stat .l { font-size: 12px; color: var(--muted); }
+
+/* ── table ── */
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.toolbar .input { flex: 1 1 220px; min-width: 0; padding: 9px 12px; }
+.toolbar select { padding: 9px 10px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); max-width: 100%; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 8px 12px; font-size: 13px; font-weight: 500; }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 860px; }
+thead th { background: var(--sunken); text-align: left; font-size: 11.5px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px; padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--sunken); }
+.r { text-align: right; }
+.who { display: flex; align-items: center; gap: 10px; }
+.ava { width: 30px; height: 30px; border-radius: 9px; background: var(--sunken); display: grid; place-items: center; font-size: 17px; flex: none; }
+.who b { font-weight: 600; }
+.who small { display: block; color: var(--muted); font-size: 11.5px; }
+.pill { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--sunken); color: var(--ink-2); }
+.pill.android { background: var(--ok-soft); color: var(--ok); }
+.pill.ios { background: var(--accent-soft); color: var(--accent); }
+.pill.web { background: var(--warn-soft); color: var(--warn); }
+.online { color: var(--ok); font-weight: 600; }
+.dim { color: var(--muted); }
+.empty { padding: 28px; text-align: center; color: var(--muted); }
+.foot-note { font-size: 12.5px; color: var(--muted); max-width: 75ch; margin: 0; }
+
+@media (max-width: 1100px) { .kpis, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-2 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 860px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { display: none; }
+  .topbar .in { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .content { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .mobile-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px)); }
+  .mobile-tabs a { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; text-decoration: none;
+    color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); font-weight: 500; font-size: 13px; }
+  .mobile-tabs a svg { width: 15px; height: 15px; }
+  .mobile-tabs a[aria-current="page"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .mobile-brand { display: inline-flex; }
+  .status .lbl { display: none; }
+}
+@media (max-width: 520px) {
+  .kpis, .grid-4 { gap: 10px; } .kpi { padding: 13px; } .kpi .value { font-size: 23px; }
+  .grid-4 { grid-template-columns: minmax(0, 1fr); }
+  .stat-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .chart { height: 200px; }
+}
 </style>
 </head>
 <body>
 
-<section class="login" id="login" hidden>
-  <div class="logo" style="color:var(--ink)"><b>TRUE</b><i>DUEL</i></div>
-  <h1 style="font-size:20px">Admin paneli</h1>
-  <p class="note">Admin açarını daxil et. Bu cihazda yadda saxlanılacaq.</p>
-  <form id="loginForm">
-    <div style="display:grid;gap:10px">
-      <input id="keyInput" type="password" autocomplete="current-password" placeholder="td-…" aria-label="Admin açarı">
-      <button class="btn-main" type="submit">Daxil ol</button>
+<!-- ───────── Giriş ───────── -->
+<div class="login" id="login" hidden>
+  <form class="login-card" id="loginForm">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="wordmark"><span class="t">TRUE</span><span class="d">DUEL</span></span>
+      <span class="tag" style="background:var(--accent-soft);color:var(--accent)">Admin</span>
     </div>
+    <div style="display:grid;gap:6px">
+      <h1>Admin panelinə giriş</h1>
+      <p>Admin açarını daxil et. Bu cihazda yadda saxlanılır, növbəti dəfə soruşulmur.</p>
+    </div>
+    <div class="field">
+      <label for="keyInput">Admin açarı</label>
+      <input class="input" id="keyInput" type="password" autocomplete="current-password" placeholder="td-••••••••" required>
+    </div>
+    <div class="alert" id="loginErr" hidden></div>
+    <button class="btn btn-primary" id="loginBtn" type="submit">Daxil ol</button>
   </form>
-  <div class="err" id="loginErr" hidden></div>
-</section>
+</div>
 
-<div id="app" hidden>
-  <header class="bar"><div class="in">
-    <div class="logo"><b>TRUE</b><i>DUEL</i><small>ADMIN</small></div>
-    <div class="meta">
-      <span><span class="dot" id="liveDot"></span> <span id="updated">yüklənir…</span></span>
-      <button class="btn-light" id="refreshBtn" type="button">Yenilə</button>
-      <button class="btn-light" id="logoutBtn" type="button">Çıxış</button>
+<!-- ───────── Panel ───────── -->
+<div class="shell" id="app" hidden>
+  <aside class="side" aria-label="Bölmələr">
+    <div class="brandrow"><span class="wordmark"><span class="t">TRUE</span><span class="d">DUEL</span></span><span class="tag">Admin</span></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <span id="sideUpdated">—</span>
+      <button type="button" id="logoutBtn">Çıxış</button>
     </div>
-  </div></header>
+  </aside>
 
-  <main class="wrap">
-    <div class="err" id="err" hidden></div>
-
-    <section class="kpis" id="kpis" aria-label="Əsas göstəricilər"></section>
-
-    <section class="card">
-      <h2>Yeni oyunçular <span>son 30 gün · gündəlik qeydiyyat</span></h2>
-      <svg class="chart" id="chart" viewBox="0 0 900 170" preserveAspectRatio="none" role="img" aria-label="Son 30 gündə gündəlik qeydiyyat"></svg>
-    </section>
-
-    <section class="grid4">
-      <div class="card"><h2>Ölkələr <span id="cCount"></span></h2><div class="rows" id="byCountry"></div></div>
-      <div class="card"><h2>Cihaz <span>Android / iPhone</span></h2><div class="rows" id="byPlatform"></div>
-        <p class="note" style="margin:10px 0 0">“Naməlum” — 2.7.1-dən köhnə versiyada olan oyunçular. Tətbiqi yeniləyəndə cihaz görünəcək.</p></div>
-      <div class="card"><h2>Dil</h2><div class="rows" id="byLang"></div></div>
-      <div class="card"><h2>Tətbiq versiyası</h2><div class="rows" id="byVersion"></div></div>
-    </section>
-
-    <section class="card">
-      <h2>Oyunçular <span id="uCount"></span></h2>
-      <div class="tools">
-        <input id="search" type="search" placeholder="Ad, ölkə, dost kodu…" aria-label="Oyunçu axtar">
-        <button class="chip" type="button" data-sort="created_at" aria-pressed="true">Ən yeni</button>
-        <button class="chip" type="button" data-sort="last_seen_at" aria-pressed="false">Son görünən</button>
-        <button class="chip" type="button" data-sort="rating" aria-pressed="false">Reytinq</button>
-        <button class="chip" type="button" data-sort="played" aria-pressed="false">Ən çox oynayan</button>
+  <div class="main">
+    <header class="topbar">
+      <div class="in">
+        <div style="display:flex;align-items:center;gap:12px;min-width:0">
+          <span class="mobile-brand"><span class="wordmark" style="font-size:18px"><span class="t">TRUE</span><span class="d">DUEL</span></span></span>
+          <h1 id="pageTitle">Ümumi baxış</h1>
+        </div>
+        <div class="status">
+          <span class="pulse" id="pulse"></span><span class="lbl" id="updated">yüklənir…</span>
+          <button class="btn" type="button" id="refreshBtn">Yenilə</button>
+          <button class="btn mobile-brand" type="button" id="logoutBtn2">Çıxış</button>
+        </div>
       </div>
-      <div class="tablewrap"><table>
-        <thead><tr><th>Oyunçu</th><th>Ölkə</th><th>Cihaz</th><th>Versiya</th><th>Qeydiyyat</th><th>Son görünmə</th>
-          <th style="text-align:right">Oyun</th><th style="text-align:right">Qələbə</th><th style="text-align:right">Reytinq</th><th style="text-align:right">Coin</th></tr></thead>
-        <tbody id="users"></tbody>
-      </table></div>
-    </section>
+      <nav class="mobile-tabs" id="mtabs" aria-label="Bölmələr"></nav>
+    </header>
 
-    <p class="note">Bu panel <b>qeydiyyatdan keçən</b> oyunçuları göstərir (tətbiqi açıb ad yazanlar). Google Play-dən
-      ümumi yükləmə sayı (açmayanlar da daxil) yalnız Play Console → Statistika bölməsində görünür.</p>
-  </main>
+    <main class="content">
+      <div class="alert" id="err" hidden></div>
+
+      <!-- Ümumi baxış -->
+      <section class="stack" id="v-overview" data-view>
+        <div class="kpis" id="kpiOverview"></div>
+        <div class="panel">
+          <div class="panel-head"><h2>Son 30 gün</h2>
+            <div class="legend"><span><i style="background:var(--s1)"></i>Yeni oyunçu</span><span><i style="background:var(--s2)"></i>Onlayn duel</span><span><i style="background:var(--s3)"></i>Gündəlik çağırış</span></div></div>
+          <div class="chartbox" id="chartMain"></div>
+        </div>
+        <div class="grid-4">
+          <div class="panel"><div class="panel-head"><h2>Ölkələr</h2><span class="hint" id="countryHint"></span></div><div class="list" id="byCountry"></div></div>
+          <div class="panel"><div class="panel-head"><h2>Cihaz</h2></div><div class="list" id="byPlatform"></div>
+            <p class="foot-note">“Naməlum” — 2.7.1-dən köhnə versiyadakı oyunçular. Yeniləyəndə görünəcək.</p></div>
+          <div class="panel"><div class="panel-head"><h2>Dil</h2></div><div class="list" id="byLang"></div></div>
+          <div class="panel"><div class="panel-head"><h2>Versiya</h2></div><div class="list" id="byVersion"></div></div>
+        </div>
+      </section>
+
+      <!-- Oyun -->
+      <section class="stack" id="v-games" data-view hidden>
+        <div class="kpis" id="kpiGames"></div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head"><h2>Oyun aktivliyi · 30 gün</h2>
+              <div class="legend"><span><i style="background:var(--s2)"></i>Onlayn duel</span><span><i style="background:var(--s4)"></i>Cavab verən oyunçu</span></div></div>
+            <div class="chartbox" id="chartGames"></div>
+          </div>
+          <div class="panel"><div class="panel-head"><h2>Onlayn duellər</h2><span class="hint">rejimə görə</span></div><div class="list" id="byMode"></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel">
+            <div class="panel-head"><h2>Ən çox oynayanlar</h2><span class="hint">top 10</span></div>
+            <div class="tablewrap"><table style="min-width:520px"><thead><tr><th>#</th><th>Oyunçu</th><th class="r">Oyun</th><th class="r">Qələbə</th><th class="r">Reytinq</th><th class="r">XP</th></tr></thead><tbody id="topPlayers"></tbody></table></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>Gündəlik çağırış</h2></div><div class="stat-row" id="dailyStats"></div>
+            <div class="panel-head"><h2>Onlayn cavablar</h2></div><div class="stat-row" id="answerStats"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Oyunçular -->
+      <section class="stack" id="v-players" data-view hidden>
+        <div class="panel">
+          <div class="toolbar">
+            <input class="input" id="search" type="search" placeholder="Ad, dost kodu və ya ölkə axtar" aria-label="Oyunçu axtar">
+            <select id="fCountry" aria-label="Ölkə"><option value="">Bütün ölkələr</option></select>
+            <select id="fPlatform" aria-label="Cihaz"><option value="">Bütün cihazlar</option><option value="android">Android</option><option value="ios">iPhone</option><option value="web">Veb</option><option value="unknown">Naməlum</option></select>
+            <div class="seg" role="group" aria-label="Sıralama">
+              <button type="button" data-sort="created_at" aria-pressed="true">Ən yeni</button>
+              <button type="button" data-sort="last_seen_at" aria-pressed="false">Aktiv</button>
+              <button type="button" data-sort="played" aria-pressed="false">Oyun</button>
+              <button type="button" data-sort="rating" aria-pressed="false">Reytinq</button>
+            </div>
+            <button class="btn" type="button" id="csvBtn">CSV yüklə</button>
+          </div>
+          <span class="hint" id="uCount"></span>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Oyunçu</th><th>Ölkə</th><th>Cihaz</th><th>Versiya</th><th>Qeydiyyat</th><th>Son görünmə</th>
+              <th class="r">Oyun</th><th class="r">Qələbə</th><th class="r">Reytinq</th><th class="r">Coin</th><th class="r">Seriya</th></tr></thead>
+            <tbody id="users"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- Suallar -->
+      <section class="stack" id="v-questions" data-view hidden>
+        <div class="kpis" id="kpiQuestions"></div>
+        <div class="panel">
+          <div class="panel-head"><h2>Şikayət edilən suallar</h2><span class="hint">oyunçular oyunda “⚠️” düyməsi ilə göndərir</span></div>
+          <div class="tablewrap"><table style="min-width:680px"><thead><tr><th class="r">Şikayət</th><th>Sual</th><th>Variant</th><th>Düz cavab</th><th>ID</th><th>Son şikayət</th></tr></thead><tbody id="reported"></tbody></table></div>
+        </div>
+      </section>
+
+      <p class="foot-note">Panel tətbiqi açıb ad yazan oyunçuları sayır. Google Play-dən ümumi yükləmə sayı (açmayanlar da daxil) Play Console → Statistics bölməsindədir. Məlumat hər dəqiqə avtomatik yenilənir.</p>
+    </main>
+  </div>
 </div>
 
 <script>
@@ -162,41 +334,53 @@ const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsI
 const STORE = 'trueduel_admin_key';
 const REFRESH_MS = 60000;
 
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const flag = (cc) => {
-  if (!cc || cc.length !== 2 || cc === '??') return '🏳️';
-  return String.fromCodePoint(...[...cc.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
-};
+const VIEWS = [
+  { id: 'overview', title: 'Ümumi baxış', icon: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>' },
+  { id: 'games', title: 'Oyun', icon: '<rect x="2" y="6" width="20" height="12" rx="4"/><path d="M6 12h4M8 10v4M15 12h.01M18 11h.01"/>' },
+  { id: 'players', title: 'Oyunçular', icon: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 3.5a4 4 0 0 1 0 7.5M22 21a7 7 0 0 0-4-6.3"/>' },
+  { id: 'questions', title: 'Suallar', icon: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4M12 17h.01"/>' },
+];
 const COUNTRY = { AZ: 'Azərbaycan', TR: 'Türkiyə', RU: 'Rusiya', US: 'ABŞ', GB: 'Böyük Britaniya', DE: 'Almaniya', GE: 'Gürcüstan',
-  KZ: 'Qazaxıstan', UZ: 'Özbəkistan', UA: 'Ukrayna', FR: 'Fransa', IT: 'İtaliya', ES: 'İspaniya', IR: 'İran', '??': 'Naməlum' };
+  KZ: 'Qazaxıstan', UZ: 'Özbəkistan', UA: 'Ukrayna', FR: 'Fransa', IT: 'İtaliya', ES: 'İspaniya', IR: 'İran', NL: 'Niderland', '??': 'Naməlum' };
 const PLATFORM = { android: 'Android', ios: 'iPhone', web: 'Veb', unknown: 'Naməlum' };
 const LANG = { az: 'Azərbaycan', tr: 'Türk', en: 'İngilis', ru: 'Rus', '??': 'Naməlum' };
+const MODE = { online: 'Təsadüfi rəqib', friend: 'Dostla (növbəli)', live: 'Canlı duel', bot: 'Bot', team2: 'Komanda 2v2', team3: 'Komanda 3v3' };
 
-let key = '';
-let data = null;
-let sortBy = 'created_at';
-let timer = null;
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => Number(n || 0).toLocaleString('az');
+const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+/** Bayraq şəkli — Windows bayraq emojilərini göstərmir, ona görə şəkil. */
+const flag = (cc) => (!cc || !/^[A-Za-z]{2}$/.test(cc))
+  ? '<span class="flag none"></span>'
+  : `<img class="flag" src="https://flagcdn.com/w40/${cc.toLowerCase()}.png" alt="" loading="lazy" width="20" height="14">`;
 
-function getKey() { try { return localStorage.getItem(STORE) || ''; } catch { return ''; } }
-function setKey(k) { try { k ? localStorage.setItem(STORE, k) : localStorage.removeItem(STORE); } catch {} }
+let key = '', data = null, sortBy = 'created_at', timer = null;
+const getKey = () => { try { return localStorage.getItem(STORE) || ''; } catch { return ''; } };
+const setKey = (k) => { try { k ? localStorage.setItem(STORE, k) : localStorage.removeItem(STORE); } catch {} };
 
 function ago(iso) {
-  if (!iso) return '—';
+  if (!iso) return '<span class="dim">—</span>';
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (s < 90) return '<span class="on">● indi onlayn</span>';
+  if (s < 90) return '<span class="online">● onlayn</span>';
   if (s < 3600) return Math.round(s / 60) + ' dəq əvvəl';
   if (s < 86400) return Math.round(s / 3600) + ' saat əvvəl';
   if (s < 86400 * 30) return Math.round(s / 86400) + ' gün əvvəl';
   return new Date(iso).toLocaleDateString('az');
 }
-function date(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('az', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
-    d.toLocaleTimeString('az', { hour: '2-digit', minute: '2-digit' });
+const when = (iso) => iso ? new Date(iso).toLocaleString('az', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+/* ── bölmələr (#hash) ── */
+const navHtml = () => VIEWS.map((v) => `<a href="#${v.id}" data-nav="${v.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${v.icon}</svg>${v.title}</a>`).join('');
+function route() {
+  const id = (location.hash || '#overview').slice(1);
+  const view = VIEWS.find((v) => v.id === id) || VIEWS[0];
+  document.querySelectorAll('[data-view]').forEach((s) => { s.hidden = s.id !== 'v-' + view.id; });
+  document.querySelectorAll('[data-nav]').forEach((a) => { if (a.dataset.nav === view.id) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  $('pageTitle').textContent = view.title;
 }
 
+/* ── məlumat ── */
 async function load(retry = true) {
   try {
     const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/admin_dashboard', {
@@ -205,122 +389,220 @@ async function load(retry = true) {
       body: JSON.stringify({ p_key: key }),
     });
     const text = await r.text();
-    let json;
-    try { json = JSON.parse(text); } catch { json = null; }
-    if (!json) { if (retry) { await new Promise((ok) => setTimeout(ok, 1500)); return load(false); } throw new Error('Server cavab vermədi. Bir az sonra “Yenilə” bas.'); }
+    let json = null;
+    try { json = JSON.parse(text); } catch {}
+    if (!json) {
+      if (retry) { await new Promise((ok) => setTimeout(ok, 1500)); return load(false); }
+      throw new Error('Server müvəqqəti cavab vermədi. Bir az sonra “Yenilə” düyməsini bas.');
+    }
     if (json.message === 'ICAZE_YOXDUR') return 'denied';
     if (!r.ok) throw new Error(json.message || 'Server xətası');
     data = json;
     render();
     $('err').hidden = true;
-    $('liveDot').className = 'dot';
+    $('pulse').className = 'pulse';
     return 'ok';
   } catch (e) {
     $('err').textContent = e.message || 'İnternet bağlantısını yoxla.';
     $('err').hidden = false;
-    $('liveDot').className = 'dot off';
+    $('pulse').className = 'pulse off';
     return 'error';
   }
 }
 
-function bars(el, list, labelFn) {
-  const max = Math.max(1, ...list.map((x) => x.n));
+/* ── hissələr ── */
+const kpi = (label, value, sub = '') =>
+  `<div class="kpi"><div class="label">${label}</div><div class="value num">${value}</div>${sub ? `<div class="sub">${sub}</div>` : ''}</div>`;
+const delta = (n, word) => `<span class="badge ${n > 0 ? 'up' : 'flat'}">${n > 0 ? '+' : ''}${fmt(n)}</span> ${word}`;
+
+function bars(el, list, labelFn, color = 'var(--accent)') {
   const total = list.reduce((a, x) => a + x.n, 0) || 1;
-  el.innerHTML = list.slice(0, 12).map((x) => `
-    <div class="row"><span class="name">${labelFn(x.k)}</span>
-      <span class="num">${x.n} <span class="note">· ${Math.round((x.n / total) * 100)}%</span></span>
-      <span class="track"><i style="width:${(x.n / max) * 100}%"></i></span></div>`).join('') || '<p class="note">Hələ məlumat yoxdur.</p>';
+  el.innerHTML = list.slice(0, 8).map((x) => `
+    <div class="li"><span class="k">${labelFn(x.k)}</span><span class="v num">${fmt(x.n)}<small>${pct(x.n, total)}%</small></span>
+      <span class="meter"><i style="width:${pct(x.n, total)}%;background:${color}"></i></span></div>`).join('')
+    || '<p class="foot-note">Hələ məlumat yoxdur.</p>';
 }
 
-function chart(daily) {
-  const W = 900, H = 170, pad = 22, bottom = 24;
-  const max = Math.max(1, ...daily.map((d) => d.n));
-  const step = (W - pad * 2) / daily.length;
-  const y = (n) => H - bottom - (n / max) * (H - bottom - 14);
-  let s = '';
-  [0, Math.ceil(max / 2), max].forEach((v) => {
-    s += `<line class="grid" x1="${pad}" x2="${W - pad}" y1="${y(v)}" y2="${y(v)}"/><text x="0" y="${y(v) + 4}">${v}</text>`;
+/** 30 günlük qrafik: sütunlar + xətlər; üzərinə gələndə günün rəqəmləri. */
+function chart(box, days, series) {
+  const W = 960, H = 240, L = 34, R = 10, T = 12, B = 26;
+  const max = Math.max(1, ...days.flatMap((d) => series.map((s) => d[s.key] || 0)));
+  const top = Math.max(4, Math.ceil(max / 4) * 4);
+  const iw = (W - L - R) / days.length;
+  const y = (v) => T + (H - T - B) * (1 - v / top);
+  let svg = '';
+  for (let i = 0; i <= 4; i++) { const v = (top / 4) * i; svg += `<line class="gl" x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${v}</text>`; }
+  days.forEach((d, i) => { if (i % 5 === 0 || i === days.length - 1) svg += `<text x="${L + i * iw + iw / 2}" y="${H - 6}" text-anchor="middle">${d.d.slice(8)}.${d.d.slice(5, 7)}</text>`; });
+  const barS = series.filter((s) => s.type === 'bar');
+  days.forEach((d, i) => barS.forEach((s, j) => {
+    const w = Math.max(2, (iw - 6) / barS.length), x = L + i * iw + 3 + j * w, v = d[s.key] || 0;
+    if (v > 0) svg += `<rect x="${x}" y="${y(v)}" width="${w - 1}" height="${H - B - y(v)}" rx="2.5" fill="${s.color}"/>`;
+  }));
+  series.filter((s) => s.type === 'line').forEach((s) => {
+    const pts = days.map((d, i) => `${L + i * iw + iw / 2},${y(d[s.key] || 0)}`);
+    svg += `<polyline fill="none" stroke="${s.color}" stroke-width="2.25" stroke-linejoin="round" stroke-linecap="round" points="${pts.join(' ')}"/>`;
+    const last = days.length - 1;
+    svg += `<circle cx="${L + last * iw + iw / 2}" cy="${y(days[last][s.key] || 0)}" r="3.5" fill="${s.color}"/>`;
   });
-  daily.forEach((d, i) => {
-    const x = pad + i * step + 2, h = H - bottom - y(d.n);
-    const today = i === daily.length - 1;
-    s += `<rect class="b${today ? ' today' : ''}" x="${x}" y="${y(d.n)}" width="${Math.max(2, step - 4)}" height="${Math.max(0, h)}" rx="3"><title>${d.d}: ${d.n} yeni</title></rect>`;
-    if (i % 5 === 0 || today) s += `<text x="${x}" y="${H - 6}">${d.d.slice(5).replace('-', '.')}</text>`;
-  });
-  $('chart').innerHTML = s;
+  svg += `<rect data-hover x="0" y="${T}" width="0" height="${H - T - B}" fill="currentColor" opacity="0.06"/>`;
+  box.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Son 30 günün qrafiki">${svg}</svg><div class="tip" hidden></div>`;
+  const el = box.querySelector('svg'), tip = box.querySelector('.tip'), hv = el.querySelector('[data-hover]');
+  const move = (ev) => {
+    const rect = el.getBoundingClientRect();
+    const px = ((ev.clientX - rect.left) / rect.width) * W;
+    const i = Math.min(days.length - 1, Math.max(0, Math.floor((px - L) / iw)));
+    const d = days[i];
+    hv.setAttribute('x', L + i * iw); hv.setAttribute('width', iw);
+    tip.hidden = false;
+    const cx = ((L + i * iw + iw / 2) / W) * rect.width;
+    tip.style.left = Math.min(rect.width - 70, Math.max(70, cx)) + 'px';
+    tip.style.top = '8px';
+    tip.innerHTML = `<b>${d.d.slice(8)}.${d.d.slice(5, 7)}.${d.d.slice(0, 4)}</b>` + series.map((s) => `${s.label}: ${fmt(d[s.key])}`).join('<br>');
+    tip.style.transform = 'translate(-50%, 0)';
+  };
+  el.addEventListener('pointermove', move);
+  el.addEventListener('pointerdown', move);
+  el.addEventListener('pointerleave', () => { tip.hidden = true; hv.setAttribute('width', 0); });
 }
 
+/* ── göstər ── */
 function render() {
-  const t = data.totals;
-  $('updated').textContent = 'yeniləndi ' + new Date(data.generated_at).toLocaleTimeString('az', { hour: '2-digit', minute: '2-digit' });
-  const kpi = (v, l, cls = '') => `<div class="kpi ${cls}"><div class="v">${v}</div><div class="l">${l}</div></div>`;
-  $('kpis').innerHTML =
-    kpi(t.players, 'Qeydiyyatdan keçən oyunçu', 'hero') +
-    kpi('+' + t.new_today, 'Bu gün yeni') +
-    kpi('+' + t.new_7d, 'Son 7 gündə yeni') +
-    kpi(`<span class="live">${t.online_now}</span>`, 'İndi onlayn') +
-    kpi(t.active_24h, 'Son 24 saatda aktiv') +
-    kpi(t.active_7d, 'Son 7 gündə aktiv') +
-    kpi(t.matches_done, 'Bitmiş onlayn duel') +
-    kpi(t.friendships, 'Dostluq');
-  chart(data.daily);
+  const t = data.totals, g = data.games;
+  const stamp = new Date(data.generated_at).toLocaleTimeString('az', { hour: '2-digit', minute: '2-digit' });
+  $('updated').textContent = 'Yeniləndi ' + stamp;
+  $('sideUpdated').textContent = 'Canlı · yeniləndi ' + stamp;
+
+  const returnRate = pct(t.returned, t.eligible_return);
+  $('kpiOverview').innerHTML =
+    kpi('Oyunçular', fmt(t.players), delta(t.new_today, 'bu gün') + delta(t.new_7d, '7 gündə')) +
+    kpi('Aktiv (son 24 saat)', fmt(t.active_24h), `<span class="online">●</span> ${fmt(t.online_now)} nəfər indi onlayn`) +
+    kpi('Geri qayıdanlar', returnRate + '%', `${fmt(t.returned)} / ${fmt(t.eligible_return)} oyunçu növbəti gün qayıdıb`) +
+    kpi('Oynanan oyunlar', fmt(g.games_total + g.online_started + g.daily_total),
+        `${fmt(g.online_started)} onlayn duel · ${fmt(g.daily_total)} gündəlik çağırış`);
+  chart($('chartMain'), data.daily, [
+    { key: 'n', label: 'Yeni oyunçu', color: 'var(--s1)', type: 'bar' },
+    { key: 'm', label: 'Onlayn duel', color: 'var(--s2)', type: 'line' },
+    { key: 'c', label: 'Gündəlik çağırış', color: 'var(--s3)', type: 'line' },
+  ]);
   bars($('byCountry'), data.by_country, (k) => `${flag(k)} ${esc(COUNTRY[k] || k)}`);
-  $('cCount').textContent = data.by_country.length + ' ölkə';
-  bars($('byPlatform'), data.by_platform, (k) => esc(PLATFORM[k] || k));
-  bars($('byLang'), data.by_lang, (k) => esc(LANG[k] || k));
-  bars($('byVersion'), data.by_version, (k) => esc(k === 'unknown' ? 'Naməlum (köhnə)' : 'v' + k));
+  $('countryHint').textContent = data.by_country.length + ' ölkə';
+  bars($('byPlatform'), data.by_platform, (k) => esc(PLATFORM[k] || k), 'var(--s2)');
+  bars($('byLang'), data.by_lang, (k) => esc(LANG[k] || k), 'var(--s3)');
+  bars($('byVersion'), data.by_version, (k) => esc(k === 'unknown' ? 'Naməlum' : 'v' + k), 'var(--s4)');
+
+  const acc = pct(g.answers_correct, g.answers_total);
+  $('kpiGames').innerHTML =
+    kpi('Onlayn duellər', fmt(g.online_started), delta(g.online_today, 'bu gün') + ` ${fmt(g.online_finished)} başa çatıb`) +
+    kpi('Serverə yazılan matçlar', fmt(g.games_total), `${fmt(g.wins_total)} qələbə`) +
+    kpi('Gündəlik çağırış', fmt(g.daily_total), delta(g.daily_today, 'bu gün') + ` orta xal ${fmt(g.daily_avg_score)}`) +
+    kpi('Cavab dəqiqliyi', acc + '%', `<span style="flex:1"><span class="meter"><i style="width:${acc}%;background:var(--s2)"></i></span></span>`);
+  chart($('chartGames'), data.daily, [
+    { key: 'm', label: 'Onlayn duel', color: 'var(--s2)', type: 'bar' },
+    { key: 'a', label: 'Cavab verən oyunçu', color: 'var(--s4)', type: 'line' },
+  ]);
+  const maxMode = Math.max(1, ...data.by_mode.map((m) => m.n));
+  $('byMode').innerHTML = data.by_mode.map((m) => `
+    <div class="li"><span class="k">${esc(MODE[m.k] || m.k)}</span><span class="v num">${fmt(m.n)}<small>${fmt(m.done)} bitib</small></span>
+      <span class="meter"><i style="width:${pct(m.n, maxMode)}%;background:var(--s2)"></i></span></div>`).join('')
+    || '<p class="foot-note">Hələ onlayn duel yoxdur.</p>';
+  $('topPlayers').innerHTML = data.top_players.map((p, i) => `<tr><td class="num dim">${i + 1}</td>
+    <td><div class="who"><span class="ava">${esc(p.avatar)}</span><span><b>${esc(p.name)}</b><small>${flag(p.country)} ${esc(COUNTRY[p.country] || p.country || '')}</small></span></div></td>
+    <td class="r num">${fmt(p.played)}</td><td class="r num">${fmt(p.wins)}</td><td class="r num">${fmt(p.rating)}</td><td class="r num">${fmt(p.xp)}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="empty">Hələ oyun yoxdur.</td></tr>';
+  $('dailyStats').innerHTML =
+    `<div class="stat"><div class="v num">${fmt(g.daily_total)}</div><div class="l">cəmi oynanıb</div></div>` +
+    `<div class="stat"><div class="v num">${fmt(g.daily_today)}</div><div class="l">bu gün</div></div>` +
+    `<div class="stat"><div class="v num">${fmt(g.daily_avg_score)}</div><div class="l">orta xal / 100</div></div>`;
+  $('answerStats').innerHTML =
+    `<div class="stat"><div class="v num">${fmt(g.answers_total)}</div><div class="l">cavab</div></div>` +
+    `<div class="stat"><div class="v num">${acc}%</div><div class="l">düz</div></div>` +
+    `<div class="stat"><div class="v num">${(g.avg_answer_ms / 1000).toFixed(1)} san</div><div class="l">orta vaxt</div></div>`;
+
+  $('kpiQuestions').innerHTML =
+    kpi('Sual bazası', fmt(t.questions), `${fmt(Math.round(t.questions / 10))} set · 4 dildə`) +
+    kpi('Şikayətlər', fmt(g.reports), g.reports ? '<span class="badge warn">yoxlanmalıdır</span>' : '<span class="badge up">şikayət yoxdur</span>') +
+    kpi('Onlayn cavablar', fmt(g.answers_total), `${acc}% düz cavab`) +
+    kpi('Nailiyyətlər', fmt(g.achievements), 'serverdə açılan');
+  $('reported').innerHTML = data.reported.map((q) => `<tr><td class="r"><span class="badge warn">${q.n}</span></td>
+    <td>${esc(q.stem)}</td><td><b>${esc(q.text)}</b></td><td>${q.answer ? 'Hə' : 'Yox'}</td><td class="num dim">${esc(q.id)}</td><td>${when(q.last)}</td></tr>`).join('')
+    || '<tr><td colspan="6" class="empty">Hələ şikayət edilən sual yoxdur.</td></tr>';
+
+  const sel = $('fCountry'), cur = sel.value;
+  sel.innerHTML = '<option value="">Bütün ölkələr</option>' + data.by_country.map((c) => `<option value="${esc(c.k)}">${esc(COUNTRY[c.k] || c.k)} (${c.n})</option>`).join('');
+  sel.value = cur;
   renderUsers();
 }
 
-function renderUsers() {
-  const q = $('search').value.trim().toLowerCase();
-  let list = data.users.filter((u) => !q ||
-    [u.name, u.country, COUNTRY[u.country], u.code, u.platform].some((x) => String(x ?? '').toLowerCase().includes(q)));
-  list = list.slice().sort((a, b) => {
-    const A = a[sortBy], B = b[sortBy];
-    if (sortBy === 'created_at' || sortBy === 'last_seen_at') return String(B ?? '').localeCompare(String(A ?? ''));
-    return (B ?? 0) - (A ?? 0);
-  });
-  $('uCount').textContent = list.length + ' / ' + data.users.length;
-  $('users').innerHTML = list.map((u) => `<tr>
-    <td>${esc(u.avatar)} <b>${esc(u.name)}</b> <span class="note">${esc(u.code || '')}</span></td>
-    <td>${flag(u.country)} ${esc(COUNTRY[u.country] || u.country || '—')}</td>
-    <td><span class="pill ${esc(u.platform || '')}">${esc(PLATFORM[u.platform] || 'Naməlum')}</span></td>
-    <td>${u.version ? 'v' + esc(u.version) : '—'}</td>
-    <td>${date(u.created_at)}</td>
-    <td>${ago(u.last_seen_at)}</td>
-    <td class="n">${u.played ?? 0}</td><td class="n">${u.wins ?? 0}</td><td class="n">${u.rating ?? 0}</td><td class="n">${u.coins ?? 0}</td>
-  </tr>`).join('') || '<tr><td colspan="10" class="note">Heç kim tapılmadı.</td></tr>';
+function filteredUsers() {
+  const q = $('search').value.trim().toLowerCase(), fc = $('fCountry').value, fp = $('fPlatform').value;
+  return data.users.filter((u) =>
+    (!fc || u.country === fc) &&
+    (!fp || (u.platform || 'unknown') === fp) &&
+    (!q || [u.name, u.code, u.country, COUNTRY[u.country]].some((x) => String(x ?? '').toLowerCase().includes(q)))
+  ).sort((a, b) => (sortBy === 'created_at' || sortBy === 'last_seen_at')
+    ? String(b[sortBy] ?? '').localeCompare(String(a[sortBy] ?? ''))
+    : (b[sortBy] ?? 0) - (a[sortBy] ?? 0));
 }
 
+function renderUsers() {
+  const list = filteredUsers();
+  $('uCount').textContent = `${fmt(list.length)} oyunçu göstərilir · cəmi ${fmt(data.users.length)}`;
+  $('users').innerHTML = list.map((u) => `<tr>
+    <td><div class="who"><span class="ava">${esc(u.avatar)}</span><span><b>${esc(u.name)}</b><small>${esc(u.code || '')}</small></span></div></td>
+    <td>${flag(u.country)} ${esc(COUNTRY[u.country] || u.country || '—')}</td>
+    <td><span class="pill ${esc(u.platform || '')}">${esc(PLATFORM[u.platform] || 'Naməlum')}</span></td>
+    <td>${u.version ? 'v' + esc(u.version) : '<span class="dim">—</span>'}</td>
+    <td>${when(u.created_at)}</td><td>${ago(u.last_seen_at)}</td>
+    <td class="r num">${fmt(u.played)}</td><td class="r num">${fmt(u.wins)}</td><td class="r num">${fmt(u.rating)}</td>
+    <td class="r num">${fmt(u.coins)}</td><td class="r num">${u.daily_streak ? '🔥 ' + u.daily_streak : '<span class="dim">—</span>'}</td></tr>`).join('')
+    || '<tr><td colspan="11" class="empty">Bu filtrə uyğun oyunçu yoxdur.</td></tr>';
+}
+
+function csv() {
+  const rows = [['Ad', 'Dost kodu', 'Ölkə', 'Cihaz', 'Versiya', 'Qeydiyyat', 'Son görünmə', 'Oyun', 'Qələbə', 'Reytinq', 'Coin', 'XP']]
+    .concat(filteredUsers().map((u) => [u.name, u.code, u.country, PLATFORM[u.platform] || 'Naməlum', u.version || '', u.created_at, u.last_seen_at || '', u.played, u.wins, u.rating, u.coins, u.xp]));
+  const text = '﻿' + rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'trueduel-oyuncular-' + new Date().toISOString().slice(0, 10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ── axın ── */
 function showLogin(msg) {
   clearInterval(timer);
   $('app').hidden = true;
   $('login').hidden = false;
   $('loginErr').hidden = !msg;
   $('loginErr').textContent = msg || '';
-  $('keyInput').focus();
+  setTimeout(() => $('keyInput').focus(), 50);
 }
-
 async function start() {
+  $('loginBtn').disabled = true; $('loginBtn').textContent = 'Yoxlanılır…';
+  const res = await load();
+  $('loginBtn').disabled = false; $('loginBtn').textContent = 'Daxil ol';
+  if (res === 'denied') { setKey(''); key = ''; return showLogin('Açar səhvdir. Yenidən yoxla.'); }
+  if (res === 'error' && !data) return showLogin($('err').textContent);
   $('login').hidden = true;
   $('app').hidden = false;
-  const res = await load();
-  if (res === 'denied') { setKey(''); return showLogin('Açar səhvdir.'); }
+  route();
   clearInterval(timer);
   timer = setInterval(() => load(), REFRESH_MS);
 }
+function logout() { setKey(''); key = ''; data = null; $('keyInput').value = ''; showLogin(); }
 
-$('loginForm').addEventListener('submit', (e) => {
-  e.preventDefault();
-  key = $('keyInput').value.trim();
-  if (!key) return;
-  setKey(key);
-  start();
-});
+$('nav').innerHTML = navHtml();
+$('mtabs').innerHTML = navHtml();
+window.addEventListener('hashchange', route);
+$('loginForm').addEventListener('submit', (e) => { e.preventDefault(); key = $('keyInput').value.trim(); if (!key) return; setKey(key); start(); });
 $('refreshBtn').addEventListener('click', () => load());
-$('logoutBtn').addEventListener('click', () => { setKey(''); key = ''; showLogin(); });
+$('logoutBtn').addEventListener('click', logout);
+$('logoutBtn2').addEventListener('click', logout);
 $('search').addEventListener('input', () => data && renderUsers());
+$('fCountry').addEventListener('change', () => data && renderUsers());
+$('fPlatform').addEventListener('change', () => data && renderUsers());
+$('csvBtn').addEventListener('click', () => data && csv());
 document.querySelectorAll('[data-sort]').forEach((b) => b.addEventListener('click', () => {
   sortBy = b.dataset.sort;
   document.querySelectorAll('[data-sort]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
