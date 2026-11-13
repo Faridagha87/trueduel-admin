@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>TrueDuel Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky brand bar → KPI tiles → signup chart → 4 breakdown cards → player table. */
+:root {
+  --bg: #F3F1FF; --surface: #FFFFFF; --surface-2: #EEEAFD; --line: #DCD6F7;
+  --ink: #1B1446; --muted: #6A6493; --brand: #3B2FE0; --brand-2: #2A1580;
+  --yes: #16A34A; --no: #E5322D; --gold: #F29A0E;
+  --display: "Nunito", system-ui, sans-serif; --body: "Inter", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #120A3A; --surface: #1D1356; --surface-2: #261A6B; --line: #34277E;
+  --ink: #F2EFFF; --muted: #A9A2D6; --brand: #8E85FF; --brand-2: #2A1580; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #120A3A; --surface: #1D1356; --surface-2: #261A6B; --line: #34277E;
+  --ink: #F2EFFF; --muted: #A9A2D6; --brand: #8E85FF; --brand-2: #2A1580; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.5 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 18px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 16px; }
+h1, h2 { font-family: var(--display); margin: 0; text-wrap: balance; }
+.bar { position: sticky; top: 0; z-index: 5; background: linear-gradient(135deg, #3A23A8, var(--brand-2)); color: #fff;
+  padding-top: env(safe-area-inset-top, 0px); }
+.bar .in { max-width: 1180px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+  padding-block: 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.logo { font: 900 italic 24px var(--display); letter-spacing: -0.5px; }
+.logo b { color: #2BD964; } .logo i { color: #FF5A5A; font-style: inherit; }
+.logo small { font: 800 11px var(--display); letter-spacing: 2px; color: rgba(255,255,255,.75); margin-left: 8px; }
+.meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: rgba(255,255,255,.85); }
+button { font: 700 13px var(--display); border: 0; border-radius: 999px; padding: 8px 14px; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid #FFC93C; outline-offset: 2px; }
+.btn-light { background: rgba(255,255,255,.16); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+.btn-main { background: var(--brand); color: #fff; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #2BD964; display: inline-block; }
+.dot.off { background: #FFC93C; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; }
+.kpi .v { font: 900 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.kpi .l { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.kpi.hero { background: linear-gradient(135deg, #3A23A8, var(--brand-2)); color: #fff; border: 0; }
+.kpi.hero .l { color: rgba(255,255,255,.8); }
+.kpi .live { color: var(--yes); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; min-width: 0; }
+.card h2 { font-size: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.card h2 span { font: 500 12px var(--body); color: var(--muted); }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.rows { display: grid; gap: 7px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: 13.5px; }
+.row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .num { font-weight: 600; font-variant-numeric: tabular-nums; }
+.track { grid-column: 1 / -1; height: 6px; background: var(--surface-2); border-radius: 6px; overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--brand); border-radius: 6px; }
+
+.chart { width: 100%; height: 170px; display: block; }
+.chart text { fill: var(--muted); font: 11px var(--body); }
+.chart .grid { stroke: var(--line); }
+.chart .b { fill: var(--brand); }
+.chart .b.today { fill: var(--yes); }
+
+.tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.tools input { flex: 1 1 200px; min-width: 0; padding: 9px 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface-2); color: var(--ink); font: 14px var(--body); }
+.chip { background: var(--surface-2); color: var(--ink); border: 1px solid var(--line); }
+.chip[aria-pressed="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; background: var(--surface-2); }
+.pill.android { background: #DCFCE7; color: #166534; } .pill.ios { background: #E0E7FF; color: #3730A3; }
+.pill.web { background: #FEF3C7; color: #92400E; }
+.on { color: var(--yes); font-weight: 600; }
+.note { color: var(--muted); font-size: 12.5px; }
+.err { background: #FEE2E2; color: #991B1B; border-radius: 12px; padding: 10px 12px; }
+
+.login { max-width: 380px; margin: 12vh auto 0; display: grid; gap: 12px; text-align: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.login input { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: 15px var(--body); }
+@media (prefers-reduced-motion: no-preference) { .track i, .chart .b { transition: width .4s, height .4s; } }
+</style>
+</head>
+<body>
+
+<section class="login" id="login" hidden>
+  <div class="logo" style="color:var(--ink)"><b>TRUE</b><i>DUEL</i></div>
+  <h1 style="font-size:20px">Admin paneli</h1>
+  <p class="note">Admin açarını daxil et. Bu cihazda yadda saxlanılacaq.</p>
+  <form id="loginForm">
+    <div style="display:grid;gap:10px">
+      <input id="keyInput" type="password" autocomplete="current-password" placeholder="td-…" aria-label="Admin açarı">
+      <button class="btn-main" type="submit">Daxil ol</button>
+    </div>
+  </form>
+  <div class="err" id="loginErr" hidden></div>
+</section>
+
+<div id="app" hidden>
+  <header class="bar"><div class="in">
+    <div class="logo"><b>TRUE</b><i>DUEL</i><small>ADMIN</small></div>
+    <div class="meta">
+      <span><span class="dot" id="liveDot"></span> <span id="updated">yüklənir…</span></span>
+      <button class="btn-light" id="refreshBtn" type="button">Yenilə</button>
+      <button class="btn-light" id="logoutBtn" type="button">Çıxış</button>
+    </div>
+  </div></header>
+
+  <main class="wrap">
+    <div class="err" id="err" hidden></div>
+
+    <section class="kpis" id="kpis" aria-label="Əsas göstəricilər"></section>
+
+    <section class="card">
+      <h2>Yeni oyunçular <span>son 30 gün · gündəlik qeydiyyat</span></h2>
+      <svg class="chart" id="chart" viewBox="0 0 900 170" preserveAspectRatio="none" role="img" aria-label="Son 30 gündə gündəlik qeydiyyat"></svg>
+    </section>
+
+    <section class="grid4">
+      <div class="card"><h2>Ölkələr <span id="cCount"></span></h2><div class="rows" id="byCountry"></div></div>
+      <div class="card"><h2>Cihaz <span>Android / iPhone</span></h2><div class="rows" id="byPlatform"></div>
+        <p class="note" style="margin:10px 0 0">“Naməlum” — 2.7.1-dən köhnə versiyada olan oyunçular. Tətbiqi yeniləyəndə cihaz görünəcək.</p></div>
+      <div class="card"><h2>Dil</h2><div class="rows" id="byLang"></div></div>
+      <div class="card"><h2>Tətbiq versiyası</h2><div class="rows" id="byVersion"></div></div>
+    </section>
+
+    <section class="card">
+      <h2>Oyunçular <span id="uCount"></span></h2>
+      <div class="tools">
+        <input id="search" type="search" placeholder="Ad, ölkə, dost kodu…" aria-label="Oyunçu axtar">
+        <button class="chip" type="button" data-sort="created_at" aria-pressed="true">Ən yeni</button>
+        <button class="chip" type="button" data-sort="last_seen_at" aria-pressed="false">Son görünən</button>
+        <button class="chip" type="button" data-sort="rating" aria-pressed="false">Reytinq</button>
+        <button class="chip" type="button" data-sort="played" aria-pressed="false">Ən çox oynayan</button>
+      </div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Oyunçu</th><th>Ölkə</th><th>Cihaz</th><th>Versiya</th><th>Qeydiyyat</th><th>Son görünmə</th>
+          <th style="text-align:right">Oyun</th><th style="text-align:right">Qələbə</th><th style="text-align:right">Reytinq</th><th style="text-align:right">Coin</th></tr></thead>
+        <tbody id="users"></tbody>
+      </table></div>
+    </section>
+
+    <p class="note">Bu panel <b>qeydiyyatdan keçən</b> oyunçuları göstərir (tətbiqi açıb ad yazanlar). Google Play-dən
+      ümumi yükləmə sayı (açmayanlar da daxil) yalnız Play Console → Statistika bölməsində görünür.</p>
+  </main>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://awdtyatwhtchzdbqewoa.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3ZHR5YXR3aHRjaHpkYnFld29hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQxMzI2NzIsImV4cCI6MjEwOTcwODY3Mn0.KJy_GadCZJ9Pe0agoHmf67sa2OAWrhHMUwt1Fu8cFbE';
+const STORE = 'trueduel_admin_key';
+const REFRESH_MS = 60000;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const flag = (cc) => {
+  if (!cc || cc.length !== 2 || cc === '??') return '🏳️';
+  return String.fromCodePoint(...[...cc.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65));
+};
+const COUNTRY = { AZ: 'Azərbaycan', TR: 'Türkiyə', RU: 'Rusiya', US: 'ABŞ', GB: 'Böyük Britaniya', DE: 'Almaniya', GE: 'Gürcüstan',
+  KZ: 'Qazaxıstan', UZ: 'Özbəkistan', UA: 'Ukrayna', FR: 'Fransa', IT: 'İtaliya', ES: 'İspaniya', IR: 'İran', '??': 'Naməlum' };
+const PLATFORM = { android: 'Android', ios: 'iPhone', web: 'Veb', unknown: 'Naməlum' };
+const LANG = { az: 'Azərbaycan', tr: 'Türk', en: 'İngilis', ru: 'Rus', '??': 'Naməlum' };
+
+let key = '';
+let data = null;
+let sortBy = 'created_at';
+let timer = null;
+
+function getKey() { try { return localStorage.getItem(STORE) || ''; } catch { return ''; } }
+function setKey(k) { try { k ? localStorage.setItem(STORE, k) : localStorage.removeItem(STORE); } catch {} }
+
+function ago(iso) {
+  if (!iso) return '—';
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 90) return '<span class="on">● indi onlayn</span>';
+  if (s < 3600) return Math.round(s / 60) + ' dəq əvvəl';
+  if (s < 86400) return Math.round(s / 3600) + ' saat əvvəl';
+  if (s < 86400 * 30) return Math.round(s / 86400) + ' gün əvvəl';
+  return new Date(iso).toLocaleDateString('az');
+}
+function date(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('az', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' +
+    d.toLocaleTimeString('az', { hour: '2-digit', minute: '2-digit' });
+}
+
+async function load(retry = true) {
+  try {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/admin_dashboard', {
+      method: 'POST',
+      headers: { apikey: ANON_KEY, Authorization: 'Bearer ' + ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_key: key }),
+    });
+    const text = await r.text();
+    let json;
+    try { json = JSON.parse(text); } catch { json = null; }
+    if (!json) { if (retry) { await new Promise((ok) => setTimeout(ok, 1500)); return load(false); } throw new Error('Server cavab vermədi. Bir az sonra “Yenilə” bas.'); }
+    if (json.message === 'ICAZE_YOXDUR') return 'denied';
+    if (!r.ok) throw new Error(json.message || 'Server xətası');
+    data = json;
+    render();
+    $('err').hidden = true;
+    $('liveDot').className = 'dot';
+    return 'ok';
+  } catch (e) {
+    $('err').textContent = e.message || 'İnternet bağlantısını yoxla.';
+    $('err').hidden = false;
+    $('liveDot').className = 'dot off';
+    return 'error';
+  }
+}
+
+function bars(el, list, labelFn) {
+  const max = Math.max(1, ...list.map((x) => x.n));
+  const total = list.reduce((a, x) => a + x.n, 0) || 1;
+  el.innerHTML = list.slice(0, 12).map((x) => `
+    <div class="row"><span class="name">${labelFn(x.k)}</span>
+      <span class="num">${x.n} <span class="note">· ${Math.round((x.n / total) * 100)}%</span></span>
+      <span class="track"><i style="width:${(x.n / max) * 100}%"></i></span></div>`).join('') || '<p class="note">Hələ məlumat yoxdur.</p>';
+}
+
+function chart(daily) {
+  const W = 900, H = 170, pad = 22, bottom = 24;
+  const max = Math.max(1, ...daily.map((d) => d.n));
+  const step = (W - pad * 2) / daily.length;
+  const y = (n) => H - bottom - (n / max) * (H - bottom - 14);
+  let s = '';
+  [0, Math.ceil(max / 2), max].forEach((v) => {
+    s += `<line class="grid" x1="${pad}" x2="${W - pad}" y1="${y(v)}" y2="${y(v)}"/><text x="0" y="${y(v) + 4}">${v}</text>`;
+  });
+  daily.forEach((d, i) => {
+    const x = pad + i * step + 2, h = H - bottom - y(d.n);
+    const today = i === daily.length - 1;
+    s += `<rect class="b${today ? ' today' : ''}" x="${x}" y="${y(d.n)}" width="${Math.max(2, step - 4)}" height="${Math.max(0, h)}" rx="3"><title>${d.d}: ${d.n} yeni</title></rect>`;
+    if (i % 5 === 0 || today) s += `<text x="${x}" y="${H - 6}">${d.d.slice(5).replace('-', '.')}</text>`;
+  });
+  $('chart').innerHTML = s;
+}
+
+function render() {
+  const t = data.totals;
+  $('updated').textContent = 'yeniləndi ' + new Date(data.generated_at).toLocaleTimeString('az', { hour: '2-digit', minute: '2-digit' });
+  const kpi = (v, l, cls = '') => `<div class="kpi ${cls}"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  $('kpis').innerHTML =
+    kpi(t.players, 'Qeydiyyatdan keçən oyunçu', 'hero') +
+    kpi('+' + t.new_today, 'Bu gün yeni') +
+    kpi('+' + t.new_7d, 'Son 7 gündə yeni') +
+    kpi(`<span class="live">${t.online_now}</span>`, 'İndi onlayn') +
+    kpi(t.active_24h, 'Son 24 saatda aktiv') +
+    kpi(t.active_7d, 'Son 7 gündə aktiv') +
+    kpi(t.matches_done, 'Bitmiş onlayn duel') +
+    kpi(t.friendships, 'Dostluq');
+  chart(data.daily);
+  bars($('byCountry'), data.by_country, (k) => `${flag(k)} ${esc(COUNTRY[k] || k)}`);
+  $('cCount').textContent = data.by_country.length + ' ölkə';
+  bars($('byPlatform'), data.by_platform, (k) => esc(PLATFORM[k] || k));
+  bars($('byLang'), data.by_lang, (k) => esc(LANG[k] || k));
+  bars($('byVersion'), data.by_version, (k) => esc(k === 'unknown' ? 'Naməlum (köhnə)' : 'v' + k));
+  renderUsers();
+}
+
+function renderUsers() {
+  const q = $('search').value.trim().toLowerCase();
+  let list = data.users.filter((u) => !q ||
+    [u.name, u.country, COUNTRY[u.country], u.code, u.platform].some((x) => String(x ?? '').toLowerCase().includes(q)));
+  list = list.slice().sort((a, b) => {
+    const A = a[sortBy], B = b[sortBy];
+    if (sortBy === 'created_at' || sortBy === 'last_seen_at') return String(B ?? '').localeCompare(String(A ?? ''));
+    return (B ?? 0) - (A ?? 0);
+  });
+  $('uCount').textContent = list.length + ' / ' + data.users.length;
+  $('users').innerHTML = list.map((u) => `<tr>
+    <td>${esc(u.avatar)} <b>${esc(u.name)}</b> <span class="note">${esc(u.code || '')}</span></td>
+    <td>${flag(u.country)} ${esc(COUNTRY[u.country] || u.country || '—')}</td>
+    <td><span class="pill ${esc(u.platform || '')}">${esc(PLATFORM[u.platform] || 'Naməlum')}</span></td>
+    <td>${u.version ? 'v' + esc(u.version) : '—'}</td>
+    <td>${date(u.created_at)}</td>
+    <td>${ago(u.last_seen_at)}</td>
+    <td class="n">${u.played ?? 0}</td><td class="n">${u.wins ?? 0}</td><td class="n">${u.rating ?? 0}</td><td class="n">${u.coins ?? 0}</td>
+  </tr>`).join('') || '<tr><td colspan="10" class="note">Heç kim tapılmadı.</td></tr>';
+}
+
+function showLogin(msg) {
+  clearInterval(timer);
+  $('app').hidden = true;
+  $('login').hidden = false;
+  $('loginErr').hidden = !msg;
+  $('loginErr').textContent = msg || '';
+  $('keyInput').focus();
+}
+
+async function start() {
+  $('login').hidden = true;
+  $('app').hidden = false;
+  const res = await load();
+  if (res === 'denied') { setKey(''); return showLogin('Açar səhvdir.'); }
+  clearInterval(timer);
+  timer = setInterval(() => load(), REFRESH_MS);
+}
+
+$('loginForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  key = $('keyInput').value.trim();
+  if (!key) return;
+  setKey(key);
+  start();
+});
+$('refreshBtn').addEventListener('click', () => load());
+$('logoutBtn').addEventListener('click', () => { setKey(''); key = ''; showLogin(); });
+$('search').addEventListener('input', () => data && renderUsers());
+document.querySelectorAll('[data-sort]').forEach((b) => b.addEventListener('click', () => {
+  sortBy = b.dataset.sort;
+  document.querySelectorAll('[data-sort]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  if (data) renderUsers();
+}));
+
+key = getKey();
+key ? start() : showLogin();
+</script>
+</body>
+</html>
